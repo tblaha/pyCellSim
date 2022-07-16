@@ -43,9 +43,34 @@ class CellEstimatorKalman():
 		self.P = 1*np.eye(2)
 
 	def _updateSoC(self):
-		fun = lambda x: Cell.SampleChargeCurve(x) - self.VOC
-		self.SoC = 1.0 - fsolve(fun, (1.0-self.SoC)*self.Ah_cap)/self.Ah_cap
-	
+		SoCs = np.linspace(0, 7.2, 20) / self.Ah_cap
+		VOCs = np.array([3.17108465, 3.45962173, 3.59913086, 3.66906171, 3.70670361, 3.7295988 , 3.74604896, 3.7600419 , 3.77356401, 3.78768823, 3.80308904, 3.82028999, 3.83978717, 3.86211607, 3.88789393, 3.91785265, 3.95287023, 3.99400473, 4.04253351, 4.09999971])
+		N = 20
+
+		eps = 1e-6
+		idx = int( np.floor( np.clip(self.SoC, SoCs[0], SoCs[-2]+eps)*(N-1) ) )
+		found = False
+		window = 1
+		if VOCs[-1] <= self.VOC:
+			found = True
+			SoC = SoCs[-1]
+		if VOCs[0] >= self.VOC:
+			found = True
+			SoC = SoCs[0]
+
+		while not found:
+			if VOCs[idx+window] > self.VOC:
+				if VOCs[idx] <= self.VOC:
+					found = True
+					SoC = SoCs[idx] + (SoCs[idx+window]-SoCs[idx]) / (VOCs[idx+window] - VOCs[idx]) * (self.VOC - VOCs[idx])
+				else:
+					idx = idx - 1
+			else:
+				idx = idx + 1
+
+		self.SoC = SoC
+
+
 	def setCurrent(self, I):
 		self.IL = I
 	
