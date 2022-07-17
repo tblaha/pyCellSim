@@ -1,5 +1,5 @@
 import numpy as np
-from scipy.optimize import fsolve
+#from scipy.optimize import fsolve
 from cell import Cell
 
 class CellEstimatorSimple():
@@ -41,6 +41,7 @@ class CellEstimatorKalman():
 		self.SoC = 1.0 # needed as initial guess to _updateSoC()
 		self._updateSoC()
 		self.P = 1*np.eye(2)
+		self.new_voltage = True
 
 	def _updateSoC(self):
 		SoCs = np.linspace(0, 7.2, 20) / self.Ah_cap
@@ -79,9 +80,13 @@ class CellEstimatorKalman():
 	
 	def setLeadVoltage(self, VL):
 		self.VL = VL
+		self.new_voltage = True
 	
 	def getSteadyStateVoltage(self):
 		return self.VOC
+
+	def getLeadVoltage(self):
+		return self.VL
 
 	def getSoC(self):
 		return self.SoC
@@ -102,7 +107,7 @@ class CellEstimatorKalman():
 		xkk = np.array([self.VL, self.VOC])
 		Pkk = self.P
 		Qk = np.diag([1e0, 1e0])
-		Rk = 1e5
+		Rk = 5e4
 		uk = self.IL
 		zk = self.VL
 
@@ -111,10 +116,12 @@ class CellEstimatorKalman():
 		yk = zk - H@xk1k
 		Sk = H@Pk1k@H.T + Rk
 		Kk = Pk1k@H/Sk
-
 		xkk = xk1k + Kk*yk
-		self.VOC = xkk[1]
 		self.P = (np.eye(2) - Kk@H)@Pk1k
+		self.new_voltage = False
+		# self.VL = xkk[0]
+		self.VOC = xkk[1]
+
 
 		self._updateSoC()
 

@@ -2,7 +2,7 @@ import numpy as np
 from cell import Cell
 from cellEstimator import CellEstimatorSimple, CellEstimatorKalman
 import matplotlib.pyplot as plt
-import pandas as pd
+#import pandas as pd
 
 
 c = Cell(
@@ -35,12 +35,15 @@ T_step = 1. # sec
 T_stop = 20.
 T_end = 40.
 t = 0.
+t_last_V = t
 
 I_step = 50. # Amp
 
 ts = [t]
 VOC_GT = [c.getSteadyStateVoltage()]
 VL = [c.getLeadVoltage()]
+VL_GT = [c.getLeadVoltage()]
+VL_est = [c.getLeadVoltage()]
 SoC_GT = [c.getSoC()]
 SoC_est = [c.getSoC()]
 It = [c.getQ()]
@@ -49,31 +52,37 @@ VOC_est = [c.getLeadVoltage()]
 
 
 I_apply = 0.
-VL_meas = 0.
+VL_meas = c.getLeadVoltage()
 idx = 0
 while t < T_end:
 	if t > T_step and t < T_stop:
 		I_apply = I_step
 	else:
 		I_apply = 0.
-	VL_meas = c.getLeadVoltage()
-
-
 	IL.append(I_apply)
+	
+	if t-t_last_V > 0.2:
+		VL_meas = c.getLeadVoltage()
+		t_last_V = t
+		e.setLeadVoltage(VL_meas)
+
+	VL.append(VL_meas)
+	VL_GT.append(c.getLeadVoltage())
+
+
 
 	# cell
 	c.setCurrent(I_apply)
 	c.step(DT)
 
 	VOC_GT.append(c.getSteadyStateVoltage())
-	VL.append(c.getLeadVoltage())
 	SoC_GT.append(c.getSoC())
 	It.append(c.getQ())
 
 	# estimator
 	e.setCurrent(I_apply)
-	e.setLeadVoltage(VL_meas)
 	e.step(DT)
+	VL_est.append(e.getLeadVoltage())
 
 	VOC_est.append(e.getSteadyStateVoltage())
 	SoC_est.append(e.getSoC())
@@ -89,6 +98,8 @@ axs[0].plot(ts, IL); axs[0].grid(); axs[0].set_ylabel("Lead Current [A]")
 axs[0].legend(["Lead Current Measurement"])
 
 axs[1].plot(ts, VL); axs[1].grid(); axs[1].set_ylabel("Lead Voltage [V]")
+axs[1].plot(ts, VL_GT)
+axs[1].plot(ts, VL_est)
 axs[1].legend(["Lead Voltage Measurement"])
 
 axs[2].plot(ts, VOC_GT); axs[2].grid(); axs[2].set_ylabel("VOC [V]")
