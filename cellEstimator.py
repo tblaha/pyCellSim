@@ -1,6 +1,7 @@
 import numpy as np
 #from scipy.optimize import fsolve
 from cell import Cell
+from copy import deepcopy
 
 class CellEstimatorSimple():
 	def __init__(self, Rtotal, VL, Ah_cap):
@@ -42,6 +43,10 @@ class CellEstimatorKalman():
 		self._updateSoC()
 		self.P = 1*np.eye(2)
 		self.new_voltage = True
+		self.t_since_last_VL = 0
+		self.I_list = np.zeros((50, 1))
+		self.VL_est = VL
+		self.ILk = 0
 
 	def _updateSoC(self):
 		SoCs = np.linspace(0, 7.2, 20) / self.Ah_cap
@@ -86,7 +91,7 @@ class CellEstimatorKalman():
 		return self.VOC
 
 	def getLeadVoltage(self):
-		return self.VL
+		return self.VL_est
 
 	def getSoC(self):
 		return self.SoC
@@ -106,22 +111,39 @@ class CellEstimatorKalman():
 
 		xkk = np.array([self.VL, self.VOC])
 		Pkk = self.P
-		Qk = np.diag([1e0, 1e0])
-		Rk = 5e4
-		uk = self.IL
+		Qk = np.diag([2e1, 2e1])
+		Rk = 1e4
 		zk = self.VL
 
-		xk1k = F@xkk + B*uk
-		Pk1k = F@Pkk@F.T + Qk
-		yk = zk - H@xk1k
-		Sk = H@Pk1k@H.T + Rk
-		Kk = Pk1k@H/Sk
-		xkk = xk1k + Kk*yk
-		self.P = (np.eye(2) - Kk@H)@Pk1k
-		self.new_voltage = False
-		# self.VL = xkk[0]
-		self.VOC = xkk[1]
+		self.t_since_last_VL += DT
+		self.I_list[1:] = self.I_list[:-1]
+		self.I_list[0] = self.IL
+		uk = self.I_list[-1]
 
+		if self.new_voltage:
+			self.new_voltage = False
+			Rk *= self.t_since_last_VL**2
+			Qk *= self.t_since_last_VL**2
+			B = np.array([-self.R0, -15e-3*self.t_since_last_VL/3600]) # potentially add V-Q curve slope?
+			self.t_since_last_VL = 0
 
-		self._updateSoC()
+			xk1k = F@xkk + B*uk
+			Pk1k = F@Pkk@F.T + Qk
+			yk = zk - H@xk1k
+			Sk = H@Pk1k@H.T + Rk
+			Kk = Pk1k@H/Sk
+			xkk = xk1k + Kk*yk
+			self.P = (np.eye(2) - Kk@H)@Pk1k
+
+			self.VOC = xkk[1]
+			self._updateSoC()
+
+			self.ILk = deepcopy(self.I_list[-1])
+			self.VL_est = self.VL - (self.IL - self.ILk)*self.R0
+		
+		else:
+			VL_est_ref = self.VL - (self.IL - self.ILk)*self.R0
+			alpha = DT/(DT+0.02)
+			self.VL_est = (1-alpha) * self.VL_est + alpha * VL_est_ref
+
 

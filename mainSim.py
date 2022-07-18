@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 c = Cell(
 	Rtotal=4e-3,
 	RST=0.3e-3,
-	RLT=0.3e-3,
+	RLT=0.1e-3,
 	tauST=0.5,
 	tauLT=30.0,
 	Ah_cap=7.200,
@@ -43,7 +43,7 @@ ts = [t]
 VOC_GT = [c.getSteadyStateVoltage()]
 VL = [c.getLeadVoltage()]
 VL_GT = [c.getLeadVoltage()]
-VL_est = [c.getLeadVoltage()]
+VL_est = [e.getLeadVoltage()]
 SoC_GT = [c.getSoC()]
 SoC_est = [c.getSoC()]
 It = [c.getQ()]
@@ -53,6 +53,7 @@ VOC_est = [c.getLeadVoltage()]
 
 I_apply = 0.
 VL_meas = c.getLeadVoltage()
+VL_meas_delay = c.getLeadVoltage()
 idx = 0
 while t < T_end:
 	if t > T_step and t < T_stop:
@@ -60,20 +61,18 @@ while t < T_end:
 	else:
 		I_apply = 0.
 	IL.append(I_apply)
+	# cell
+	c.setCurrent(I_apply)
+	c.step(DT)
 	
-	if t-t_last_V > 0.2:
-		VL_meas = c.getLeadVoltage()
+	if t-t_last_V >= 0.2:
+		VL_meas = VL_meas_delay
+		VL_meas_delay = c.getLeadVoltage()
 		t_last_V = t
 		e.setLeadVoltage(VL_meas)
 
 	VL.append(VL_meas)
 	VL_GT.append(c.getLeadVoltage())
-
-
-
-	# cell
-	c.setCurrent(I_apply)
-	c.step(DT)
 
 	VOC_GT.append(c.getSteadyStateVoltage())
 	SoC_GT.append(c.getSoC())
@@ -100,7 +99,7 @@ axs[0].legend(["Lead Current Measurement"])
 axs[1].plot(ts, VL); axs[1].grid(); axs[1].set_ylabel("Lead Voltage [V]")
 axs[1].plot(ts, VL_GT)
 axs[1].plot(ts, VL_est)
-axs[1].legend(["Lead Voltage Measurement"])
+axs[1].legend(["Lead Voltage Measurement", "Lead Voltage GT", "Lead Voltage est"])
 
 axs[2].plot(ts, VOC_GT); axs[2].grid(); axs[2].set_ylabel("VOC [V]")
 axs[2].plot(ts, VOC_est)
