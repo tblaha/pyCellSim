@@ -3,13 +3,13 @@ import numpy as np
 class Cell():
 	# https://www.researchgate.net/figure/Battery-Equivalent-Circuit-Cell-Model_fig7_289205761
 	def SampleChargeCurve_continuous(Q_Ah):
-		A = 3.8 # V
-		B = 0.3 # V
-		C = -0.5 # 1/Ah
+		A = 3.73 # V
+		B = 0.46 # V
+		C = -0.39 # 1/Ah
 		D = -4.8e-2 # V
 		E = 2.0 # 1/Ah
-		F = 6 # Ah
-		G = -15e-3 # V/Ah
+		F = 6.2 # Ah
+		G = -0e-3 # V/Ah
 
 		VOC = lambda Q_Ah, A,B,C,D,E,F,G: \
 			A + B*np.exp(C*Q_Ah) + D*np.exp(E*(Q_Ah-F)) + G*Q_Ah
@@ -18,7 +18,16 @@ class Cell():
 
 	def SampleChargeCurve(SoC):
 		SoCs = np.linspace(0.0, 1.0, 20)
-		VOCs = np.array([3.17108465, 3.45962173, 3.59913086, 3.66906171, 3.70670361, 3.7295988 , 3.74604896, 3.7600419 , 3.77356401, 3.78768823, 3.80308904, 3.82028999, 3.83978717, 3.86211607, 3.88789393, 3.91785265, 3.95287023, 3.99400473, 4.04253351, 4.09999971])
+
+                # from FSN endu
+		#VOCs = np.array([3.17108465, 3.45962173, 3.59913086, 3.66906171, 3.70670361, 3.7295988 , 3.74604896, 3.7600419 , 3.77356401, 3.78768823, 3.80308904, 3.82028999, 3.83978717, 3.86211607, 3.88789393, 3.91785265, 3.95287023, 3.99400473, 4.04253351, 4.09999971])
+
+                # from manual fitting to melasta https://www.melasta.com/web/userfiles/The%20SOC%20Curves%20at%2015C%20at%20Different%20Ambient%20Temperature.jpg
+                VOCs = np.array([3.40307505, 3.5959504 , 3.68939412, 3.73672514, 3.76300891,
+                               3.78008217, 3.79359627, 3.80632037, 3.81969207, 3.83454722,
+                               3.85146546, 3.87093631, 3.89344174, 3.91950041, 3.9496948 ,
+                               3.98469137, 4.02525859, 4.07228541, 4.12680142, 4.1899998])
+
 		N = 20
 
 		eps = 1e-6

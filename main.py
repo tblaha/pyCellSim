@@ -6,7 +6,7 @@ import pandas as pd
 
 
 
-dat = pd.read_csv("data/FSN22_EnduFixed.csv")
+dat = pd.read_csv("data/run8_laps.csv")
 
 # e = CellEstimatorSimple(
 # 	Rtotal=4e-3 - 0.5e-3,
@@ -14,8 +14,8 @@ dat = pd.read_csv("data/FSN22_EnduFixed.csv")
 # 	Ah_cap=7.200,
 # 	)
 e = CellEstimatorKalman(
-	Rtotal=4.7e-3, # WARNING!!! TODO!! This is "calibrated" for the broken cell 35. Actual number probably lower
-	VL=3.0, # TODO! This initial value seems a bit important, since the Kalman acts slow. Or maybe increase initial Pkk?
+	Rtotal=2.2e-3, # WARNING!!! TODO!! This is "calibrated" for the broken cell 35. Actual number probably lower
+	VL=3.86, # TODO! This initial value seems a bit important, since the Kalman acts slow. Or maybe increase initial Pkk?
 	Ah_cap=7.200, # only needed to compute SoC fraction. Not important to Kalman internals 
 	)
 
@@ -23,8 +23,8 @@ e = CellEstimatorKalman(
 #%% run Kalman over FSN22 data
 
 DT = 0.004 # sec. Can be 0.004, but that would be slow to compute
-t = 27. # starting time
-T_end = 60.
+t = 0.2# starting time
+T_end = 220.
 
 ts = [t]
 VL = [dat["CellVoltages.MinVoltage"].loc[0]] # lead voltage

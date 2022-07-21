@@ -44,7 +44,7 @@ class CellEstimatorKalman():
 		self.P = 1*np.eye(2)
 		self.new_voltage = True
 		self.t_since_last_VL = 0
-		self.I_list = np.zeros((50, 1))
+		self.I_list = np.zeros((55, 1))
 		self.VL_est = VL
 		self.ILk = 0
 
@@ -111,8 +111,8 @@ class CellEstimatorKalman():
 
 		xkk = np.array([self.VL, self.VOC])
 		Pkk = self.P
-		Qk = np.diag([2e1, 2e1])
-		Rk = 1e4
+		Qk = np.diag([3e1, 3e1])
+		Rk = 5e5
 		zk = self.VL
 
 		self.t_since_last_VL += DT
@@ -124,7 +124,7 @@ class CellEstimatorKalman():
 			self.new_voltage = False
 			Rk *= self.t_since_last_VL**2
 			Qk *= self.t_since_last_VL**2
-			B = np.array([-self.R0, -15e-3*self.t_since_last_VL/3600]) # potentially add V-Q curve slope?
+			B = np.array([-self.R0, -0*15e-3*self.t_since_last_VL/3600]) # potentially add V-Q curve slope?
 			self.t_since_last_VL = 0
 
 			xk1k = F@xkk + B*uk
